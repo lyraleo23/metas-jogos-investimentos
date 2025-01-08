@@ -1,3 +1,4 @@
+import os
 import datetime
 import openpyxl
 
@@ -23,6 +24,10 @@ def main():
     - Informa se a data atual já foi registrada.
     - Informa o sucesso ao salvar a planilha com as metas e dívidas atualizadas.
     """
+
+    os.system("cls" if os.name == "nt" else "clear")
+    print("Bem-vindo ao Gerenciador de Metas de Jogos!")
+
     # Verifica se o workbook existe
     try:
         workbook = openpyxl.load_workbook("metas_jogos.xlsx")
@@ -39,7 +44,6 @@ def main():
     # Verifica quantas linhas tem na planilha
     sheet = workbook.active
     num_linhas = sheet.max_row
-    print(f"A planilha tem {num_linhas} linhas.")
 
     if num_linhas == 1:
         # Adiciona os dados na planilha
@@ -49,10 +53,15 @@ def main():
     elif num_linhas > 1:
         # Verifica se a data atual é diferente da última data
         if sheet[f"A{num_linhas}"].value != data_atual:
-            num_linhas += 1
-            meta_trofeus = sheet[f"B{num_linhas}"].value + meta_diaria
+            ultima_data = datetime.datetime.strptime(sheet[f"A{num_linhas}"].value, "%d/%m/%Y")
+            data_atual_dt = datetime.datetime.strptime(data_atual, "%d/%m/%Y")
+            diferenca_dias = (data_atual_dt - ultima_data).days
+            print(f"A diferença em dias é: {diferenca_dias}")
+
+            meta_trofeus = sheet[f"B{num_linhas}"].value + (meta_diaria * diferenca_dias)
             divida = sheet[f"C{num_linhas}"].value
-            
+            num_linhas += 1
+
             # Adiciona os dados na planilha
             sheet[f"A{num_linhas}"] = data_atual
             sheet[f"B{num_linhas}"] = meta_trofeus
@@ -60,11 +69,14 @@ def main():
         else:
             print("A data atual já foi registrada na planilha.")
 
+    print(f'Meta atual: {sheet[f"B{num_linhas}"].value} Troféus. Dívida atual1: {sheet[f"C{num_linhas}"].value}.')
+
+    num_linhas = atualizar_trofeus(sheet, num_linhas)
+
     # Salva o arquivo Excel
     workbook.save("metas_jogos.xlsx")
     print(f'Planilha salva com sucesso. Meta: {sheet[f"B{num_linhas}"].value} Troféus. Dívida: {sheet[f"C{num_linhas}"].value}.')
-
-
+    print("Obrigado por usar o Gerenciador de Metas de Jogos!")
 
 def criar_workbook():
     # Cria um novo workbook e seleciona a planilha ativa
@@ -78,6 +90,28 @@ def criar_workbook():
 
     # Salva o arquivo Excel
     workbook.save("metas_jogos.xlsx")
+
+def atualizar_trofeus(sheet, num_linhas):
+    """
+    Função para atualizar a quantidade de troféus ganhos pelo usuário.
+    Para cada troféu ganho, diminui a quantidade de meta_trofeus e aumenta a dívida em 10.
+    """
+    trofeus_ganhos = int(input("Quantos troféus foram ganhos hoje? "))
+    meta_trofeus = sheet[f"B{num_linhas}"].value
+    divida = sheet[f"C{num_linhas}"].value
+
+    for _ in range(trofeus_ganhos):
+        if meta_trofeus > 0:
+            meta_trofeus -= 1
+            divida += 10
+
+    num_linhas += 1
+    sheet[f"A{num_linhas}"] = datetime.datetime.now().strftime("%d/%m/%Y")
+    sheet[f"B{num_linhas}"] = meta_trofeus
+    sheet[f"C{num_linhas}"] = divida
+    print(f'Atualização: Meta: {meta_trofeus} Troféus. Dívida: {divida}.')
+
+    return num_linhas
 
 
 main()
